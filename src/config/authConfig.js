@@ -41,7 +41,8 @@ export const msalConfig = {
 };
 
 export const loginRequest = {
-  scopes: ["User.Read", "openid", "profile"],
+  // scopes: ["User.Read", "openid", "profile"],
+  scopes: [`${import.meta.env.VITE_AUD_KEY}/access_as_user`],
   redirectUri: getRedirectUri(),
 };
 
