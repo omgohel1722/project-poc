@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useMsal } from "@azure/msal-react";
+import { getData } from "../services/api-services";
+import { apiPaths } from "../constants/apiPaths";
 
 const Dashboard = () => {
   const { instance, accounts } = useMsal();
@@ -7,6 +9,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState("");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const token = localStorage.getItem("accessToken");
 
   useEffect(() => {
     if (accounts.length > 0) {
@@ -29,13 +32,32 @@ const Dashboard = () => {
     }
   };
 
-  const handleFeedbackSubmit = () => {
+  const logout = async () => {
+    await getData(apiPaths.LOGOUT, "POST", null, token);
+  };
+
+  const handleFeedbackSubmit = async () => {
     if (feedback.trim()) {
-      setFeedbackSubmitted(true);
-      setTimeout(() => {
-        setFeedback("");
+      try {
+        // Call your feedback API - pass the token and feedback message
+        const response = await getData(
+          apiPaths.CREATE_MESSAGE,
+          "POST",
+          { text: feedback },
+          token
+        );
+
+        // If API call is successful, show submitted state
+        setFeedbackSubmitted(true);
+
+        setTimeout(() => {
+          setFeedback("");
+          setFeedbackSubmitted(false);
+        }, 3000);
+      } catch (error) {
         setFeedbackSubmitted(false);
-      }, 3000);
+        // Optionally handle error (show error message to user)
+      }
     }
   };
 
@@ -106,7 +128,10 @@ const Dashboard = () => {
                 </div>
               </div>
               <button
-                onClick={handleLogout}
+                onClick={() => {
+                  handleLogout();
+                  logout();
+                }}
                 className="cursor-pointer bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 hover:shadow-lg"
               >
                 Sign Out

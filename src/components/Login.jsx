@@ -1,20 +1,60 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useMsal } from "@azure/msal-react";
 import { loginRequest } from "../config/authConfig";
+import { getData } from "../services/api-services";
+import { apiPaths } from "../constants/apiPaths";
 
 const Login = () => {
-  const { instance } = useMsal();
+  const { instance, accounts } = useMsal();
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
-
+  const apiCalledRef = useRef(false);
   useEffect(() => {
     setMounted(true);
   }, []);
+  useEffect(() => {
+    const handleInitialAuth = async () => {
+      // Only proceed if we haven't called the API yet
+      if (!apiCalledRef.current) {
+        const currentAccounts = instance.getAllAccounts();
+        if (currentAccounts.length > 0) {
+          try {
+            setIsLoading(true);
+            apiCalledRef.current = true; // Mark API as called before making the request
+
+            // Acquire token silently
+            const response = await instance.acquireTokenSilent({
+              ...loginRequest,
+              account: currentAccounts[0],
+            });
+
+            const accessToken = response.accessToken;
+            localStorage.setItem("accessToken", accessToken);
+
+            // Call backend API
+            await getData(apiPaths.LOGIN, "POST", null, accessToken);
+          } catch (error) {
+            console.error("Token/API error:", error);
+            if (error.name === "InteractionRequiredAuthError") {
+              // If silent token acquisition fails, handle it appropriately
+              setIsLoading(false);
+            }
+          } finally {
+            setIsLoading(false);
+          }
+        }
+      }
+    };
+
+    handleInitialAuth();
+  }, [instance]); // Only depend on instance
 
   const handleLogin = async () => {
     try {
       setIsLoading(true);
       await instance.loginRedirect(loginRequest);
+      // Note: The actual token acquisition and API call will happen after redirect
+      // when the useEffect runs again with the new account
     } catch (error) {
       console.error("Login failed:", error);
       setIsLoading(false);
