@@ -2,14 +2,38 @@ import React, { useState, useEffect } from "react";
 import { useMsal } from "@azure/msal-react";
 import { getData } from "../services/api-services";
 import { apiPaths } from "../constants/apiPaths";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+// ✅ Import images
+import bgImage from "../assets/bg-image.jpg";
+import atqorLogo from "../assets/atqorLogo.png";
+// import ceoImage from "../assets/atqorLogo.jpg";
 
 const Dashboard = () => {
-  const { instance, accounts } = useMsal();
+  const { accounts } = useMsal();
   const [userInfo, setUserInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState("");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [file, setFile] = useState(null);
+  const [fileBase64, setFileBase64] = useState("");
+  const [fileType, setFileType] = useState("");
+
   const token = localStorage.getItem("accessToken");
+
+  const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+  const MAX_VIDEO_SIZE = 20 * 1024 * 1024; // 20MB
+
+  const videoLinks = [
+    "https://www.youtube.com/embed/YZZcnFKMSM0",
+    "https://www.youtube.com/embed/tgbNymZ7vqY",
+    "https://www.youtube.com/embed/ysz5S6PUM-U",
+    "https://www.youtube.com/embed/ScMzIvxBSi4",
+    "https://www.youtube.com/embed/aqz-KE-bpKQ",
+  ];
+
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
     if (accounts.length > 0) {
@@ -18,58 +42,82 @@ const Dashboard = () => {
     }
   }, [accounts]);
 
-  const getRedirectUri = () => {
-    return window.location.origin + "/";
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev + 3 >= videoLinks.length ? 0 : prev + 3));
   };
 
-  const handleLogout = async () => {
-    try {
-      await instance.logoutRedirect({
-        postLogoutRedirectUri: getRedirectUri(),
-      });
-    } catch (error) {
-      console.error("Logout failed:", error);
+  const handlePrev = () => {
+    setCurrentIndex((prev) =>
+      prev === 0 ? Math.max(videoLinks.length - 3, 0) : Math.max(prev - 3, 0)
+    );
+  };
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (!selectedFile) return;
+
+    const isImage = selectedFile.type.startsWith("image/");
+    const isVideo = selectedFile.type.startsWith("video/");
+
+    if (!isImage && !isVideo) {
+      toast.error("Only image or video files are allowed!");
+      return;
     }
+    if (isImage && selectedFile.size > MAX_IMAGE_SIZE) {
+      toast.error("Image size must be less than 5MB!");
+      return;
+    }
+    if (isVideo && selectedFile.size > MAX_VIDEO_SIZE) {
+      toast.error("Video size must be less than 20MB!");
+      return;
+    }
+
+    setFileType(isImage ? "image" : "video");
+    setFile(selectedFile);
+
+    const reader = new FileReader();
+    reader.onloadend = () => setFileBase64(reader.result);
+    reader.readAsDataURL(selectedFile);
   };
 
-  const logout = async () => {
-    await getData(apiPaths.LOGOUT, "POST", null, token);
+  const handleRemoveFile = () => {
+    setFile(null);
+    setFileBase64("");
+    setFileType("");
   };
 
   const handleFeedbackSubmit = async () => {
     if (feedback.trim()) {
       try {
-        // Call your feedback API - pass the token and feedback message
-        const response = await getData(
-          apiPaths.CREATE_MESSAGE,
-          "POST",
-          { text: feedback },
-          token
-        );
-
-        // If API call is successful, show submitted state
+        const payload = {
+          text: feedback,
+          fileUrl: fileBase64 || null,
+        };
+        await getData(apiPaths.CREATE_MESSAGE, "POST", payload, token);
         setFeedbackSubmitted(true);
-
+        toast.success("Feedback submitted successfully!");
         setTimeout(() => {
           setFeedback("");
           setFeedbackSubmitted(false);
+          handleRemoveFile();
         }, 3000);
       } catch (error) {
+        console.error("Error submitting feedback:", error);
         setFeedbackSubmitted(false);
-        // Optionally handle error (show error message to user)
+        toast.error("Failed to submit feedback!");
       }
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="w-20 h-20 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-6"></div>
-          <div className="text-white text-xl font-semibold">
+          <div className="text-slate-800 text-xl font-semibold">
             Loading Dashboard...
           </div>
-          <div className="text-slate-400 text-sm mt-2">
+          <div className="text-slate-600 text-sm mt-2">
             Preparing your analytics experience
           </div>
         </div>
@@ -81,285 +129,247 @@ const Dashboard = () => {
   const firstName = userName.split(" ")[0];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-64 -left-64 w-96 h-96 rounded-full bg-gradient-to-br from-blue-500/30 to-purple-500/30 blur-3xl animate-pulse"></div>
-        <div
-          className="absolute -bottom-64 -right-64 w-96 h-96 rounded-full bg-gradient-to-br from-cyan-500/30 to-blue-500/30 blur-3xl animate-pulse"
-          style={{ animationDelay: "2s" }}
-        ></div>
-        <div className="absolute top-1/3 right-1/4 w-48 h-48 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 blur-2xl animate-pulse"></div>
-      </div>
+    <div className="min-h-screen relative font-['Poppins']">
+      {/* ✅ Background */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: `url(${bgImage})`,
+          backgroundSize: "100% 100%",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          backgroundColor: "#f8fafc",
+          opacity: 0.9,
+        }}
+      />
 
-      {/* Header */}
-      <nav className="fixed top-0 w-full z-50 bg-slate-900/95 backdrop-blur-xl shadow-2xl border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            {/* Modern Tech Logo */}
-            <div className="flex items-center gap-3">
-              <div className="relative group">
-                {/* Animated Hexagon Logo */}
-                <div className="w-10 h-10 relative">
-                  {/* Outer hexagon */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rotate-45 transform transition-transform duration-300 group-hover:rotate-90"></div>
-                  {/* Inner hexagon */}
-                  <div className="absolute inset-1 bg-slate-900 rotate-45"></div>
-                  {/* Center dot */}
-                  <div className="absolute inset-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-pulse"></div>
-                  {/* Animated particles */}
-                  <div className="absolute top-1 right-1 w-1 h-1 bg-blue-400 rounded-full animate-ping"></div>
-                  <div
-                    className="absolute bottom-1 left-1 w-1 h-1 bg-purple-400 rounded-full animate-ping"
-                    style={{ animationDelay: "0.5s" }}
-                  ></div>
+      <ToastContainer />
+
+      {/* ✅ Header */}
+      <header className="relative w-full h-[300px] flex flex-col items-center justify-center text-center px-4">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
+          <img src={atqorLogo} alt="atQor Logo" className="h-10" />
+          <h1 className="text-4xl font-bold text-[#000000]">
+            Wali Diwali <span className="text-[#000000]">@2025</span>
+          </h1>
+        </div>
+        <p className="text-lg text-gray-700">
+          Where tradition meets taste, and gifting gets a glow-up
+        </p>
+      </header>
+
+      <main className="relative pb-16">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+          {/* ✅ Diwali Message Section */}
+          <div className="bg-[#FBEEDE9E] rounded-3xl shadow-2xl p-8 mb-8 border border-[#B99C66]">
+            <div className="space-y-6">
+              <h2 className="text-3xl font-bold text-gray-800 mb-6">
+                Dear {firstName},
+              </h2>
+
+              <p className="text-gray-700 leading-relaxed">
+                This Diwali, as we celebrate light, warmth, and new beginnings,
+                we want to recognize the strength, resilience, and unity that
+                you — and your family — bring to atQor.
+              </p>
+
+              <h3 className="text-xl font-semibold italic text-orange-800 mb-3">
+                Crafted with Heart, Rooted in India
+              </h3>
+              <p className="text-gray-700">
+                This Diwali, we go beyond gifting — we create experiences that
+                connect hearts, celebrate traditions, and strengthen
+                relationships.
+              </p>
+
+              <div className="space-y-4 text-gray-700">
+                <p>
+                  Each hamper is a fusion of cultural richness and modern
+                  elegance, thoughtfully curated to reflect the spirit of the
+                  festival.
+                </p>
+                <p>
+                  From brass bell essentials to scented candles and premium dry
+                  fruits, every item tells a story of care, celebration, and
+                  Indian craftsmanship.
+                </p>
+                <p>
+                  Sourced from local artisans, our hampers proudly support the
+                  Make in India initiative, honoring the legacy of handmade
+                  excellence.
+                </p>
+                <p>
+                  With sustainable packaging and reusable elements, we embrace
+                  eco-conscious values while preserving festive charm.
+                </p>
+
+                <p className="font-semibold italic text-orange-800 mb-3">
+                  Let this gift be more than a gesture — let it be a heartfelt
+                  experience that lingers long after the festivities.
+                </p>
+
+                <p>
+                  Our wellness initiatives this year were just one part of our
+                  dedication to each of you as a valued member of the atQor
+                  family. We know that behind each success is the support and
+                  care of your family, who share in your efforts and
+                  achievements.
+                </p>
+
+                <p>
+                  This Diwali, we thank you and your loved ones for being part
+                  of our journey. May the season bring joy and warmth to all.
+                </p>
+
+                <p className="font-semibold italic text-orange-800 mb-3">
+                  atQor Wali Diwali, unwrap joy in every jar.
+                </p>
+
+                <p className="text-gray-600 italic">
+                  Thank you for being a part of our journey.
+                </p>
+              </div>
+
+              {/* ✅ Signature */}
+              <div className="mt-8 pt-6 border-t border-gray-200">
+                <p className="text-gray-700 mb-4">With gratitude,</p>
+                <div className="flex items-center gap-4">
+                  <img
+                    src="/assets/ceo-image.jpg"
+                    alt="CEO"
+                    className="w-16 h-16 rounded-full border-2 border-orange-200 shadow-lg"
+                  />
+                  <div>
+                    <div className="font-bold text-gray-800 text-lg">
+                      Pushkaraj Kale
+                    </div>
+                    <div className="text-gray-600">CEO</div>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* User Info & Logout */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-sm font-semibold">
-                  {userName.charAt(0)}
-                </div>
-                <div className="text-sm">
-                  <div className="text-white font-medium">{userName}</div>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  handleLogout();
-                  logout();
-                }}
-                className="cursor-pointer bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 hover:shadow-lg"
-              >
-                Sign Out
-              </button>
             </div>
           </div>
-        </div>
-      </nav>
 
-      {/* Main Content */}
-      <main className="relative pt-24 pb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Chat Container */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl overflow-hidden">
-            {/* Welcome Message */}
-            <div className="p-6 sm:p-8 border-b border-white/10">
-              <div className="flex gap-4">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shadow-lg">
-                    <svg
-                      className="w-6 h-6 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl rounded-tl-none p-6 shadow-lg border border-white/20">
-                    <h2 className="text-xl font-semibold text-white mb-4">
-                      Dear {firstName},
-                    </h2>
-                    <div className="text-slate-200 leading-relaxed space-y-3 text-sm">
-                      <p>
-                        We're absolutely delighted to have you join our platform
-                        today! Your journey towards data-driven excellence
-                        starts right here, and we couldn't be more excited to be
-                        part of it.
-                      </p>
-                      <p>
-                        As you explore the dashboard, you'll discover a world of
-                        possibilities designed specifically to streamline your
-                        workflow and enhance your decision-making process. Every
-                        feature has been carefully crafted with your success in
-                        mind, ensuring that complex data becomes simple,
-                        actionable insights.
-                      </p>
-                      <p>
-                        Our team has worked tirelessly to create an experience
-                        that not only meets your needs but exceeds your
-                        expectations. From real-time updates to comprehensive
-                        reporting tools, everything is at your fingertips, ready
-                        to help you achieve your goals more efficiently than
-                        ever before.
-                      </p>
-                      <p>
-                        Below, you'll find a helpful tutorial video that walks
-                        you through the essential features and functionalities.
-                        We highly recommend taking a few minutes to watch it –
-                        it's packed with tips and tricks that will help you get
-                        the most out of your experience from day one.
-                      </p>
-                      <p className="font-medium text-blue-300">
-                        Your feedback matters to us! Feel free to share your
-                        thoughts, suggestions, or any questions in the section
-                        below. We're here to ensure your experience is nothing
-                        short of exceptional!
-                      </p>
-                    </div>
-                    <div className="mt-4 flex items-center gap-2 text-xs text-slate-400">
-                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                      {new Date().toLocaleString("en-US", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {/* ✅ Video Carousel Section */}
+          <div className="bg-[#FBEEDE9E] rounded-3xl shadow-2xl p-8 mb-8 border border-[#B99C66] relative">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
+              Leadership Diwali wishes Video Title
+            </h2>
 
-            {/* Video Section */}
-            <div className="p-6 sm:p-8 border-b border-white/10">
-              <div className="flex gap-4">
-                <div className="flex-shrink-0 w-12">
-                  {/* Spacer for alignment */}
-                </div>
-                <div className="flex-1">
-                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl rounded-tl-none p-5 shadow-lg border border-white/20">
-                    <h3 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-                      <svg
-                        className="w-5 h-5 text-red-500"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-                      </svg>
-                      Getting Started Tutorial
-                    </h3>
-                    <div
-                      className="relative rounded-xl overflow-hidden shadow-xl"
-                      style={{ paddingBottom: "56.25%" }}
-                    >
+            {/* Carousel */}
+            <div className="overflow-hidden relative">
+              <div
+                className="flex transition-transform duration-700 ease-in-out"
+                style={{
+                  transform: `translateX(-${
+                    (currentIndex / videoLinks.length) * 100
+                  }%)`,
+                }}
+              >
+                {videoLinks.map((link, index) => (
+                  <div
+                    key={index}
+                    className="flex-shrink-0 w-1/3 px-2"
+                    style={{ minWidth: "33.3333%" }}
+                  >
+                    <div className="rounded-xl overflow-hidden shadow-md">
                       <iframe
-                        className="absolute top-0 left-0 w-full h-full"
-                        src="https://www.youtube.com/embed/YZZcnFKMSM0?si=N-ZwbobI7WPRdgyh"
-                        title="Tutorial Video"
+                        className="w-full h-48"
+                        src={`${link}?rel=0`}
+                        title={`Video ${index + 1}`}
                         frameBorder="0"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
-                      />
+                      ></iframe>
                     </div>
-                    <p className="mt-3 text-sm text-slate-300">
-                      Watch this comprehensive guide to maximize your platform
-                      experience
-                    </p>
                   </div>
-                </div>
+                ))}
               </div>
-            </div>
 
-            {/* Feedback Section */}
-            <div className="p-6 sm:p-8">
-              <div className="flex gap-4">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shadow-lg">
-                    <span className="text-white text-sm font-semibold">
-                      {userName.charAt(0)}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-                    <svg
-                      className="w-5 h-5 text-blue-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
-                      />
-                    </svg>
-                    Share Your Feedback
-                  </h3>
-                  <textarea
-                    value={feedback}
-                    onChange={(e) => setFeedback(e.target.value)}
-                    placeholder="We'd love to hear your thoughts, suggestions, or any questions you might have..."
-                    className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200 text-white placeholder-slate-400"
-                    rows="5"
-                  />
-                  <div className="flex items-center justify-between mt-4">
-                    <span className="text-sm text-slate-400">
-                      {feedback.length > 0
-                        ? `${feedback.length} characters`
-                        : "Start typing..."}
-                    </span>
-                    <button
-                      onClick={handleFeedbackSubmit}
-                      disabled={!feedback.trim() || feedbackSubmitted}
-                      className={`px-6 py-2.5 rounded-xl font-medium transition-all duration-200 flex items-center gap-2 ${
-                        feedbackSubmitted
-                          ? "bg-green-500 text-white cursor-default"
-                          : feedback.trim()
-                          ? "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                          : "bg-white/10 text-slate-500 cursor-not-allowed"
-                      }`}
-                    >
-                      {feedbackSubmitted ? (
-                        <>
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                          Submitted!
-                        </>
-                      ) : (
-                        <>
-                          Submit Feedback
-                          <svg
-                            className="w-5 h-5 rotate-90"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                            />
-                          </svg>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
+              {/* Navigation Arrows */}
+              <button
+                onClick={handlePrev}
+                className="absolute top-1/2 -left-4 transform -translate-y-1/2 bg-[#B99C66] text-white px-3 py-2 rounded-full shadow-md hover:bg-[#a07e3a]"
+              >
+                ❮
+              </button>
+              <button
+                onClick={handleNext}
+                className="absolute top-1/2 -right-4 transform -translate-y-1/2 bg-[#B99C66] text-white px-3 py-2 rounded-full shadow-md hover:bg-[#a07e3a]"
+              >
+                ❯
+              </button>
             </div>
           </div>
 
-          {/* Footer Note */}
-          <div className="text-center mt-8 text-sm text-slate-400">
-            <p>Thank you for being a valued member of our community</p>
+          {/* ✅ Feedback Section */}
+          <div className="bg-[#FBEEDE9E] rounded-3xl shadow-2xl p-8 mb-8 border border-[#B99C66] relative">
+            <div className="p-8">
+              <h2 className="text-xl font-semibold text-slate-800 mb-4">
+                {userName} Share Your Diwali Wishes
+              </h2>
+              <textarea
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                placeholder="Share your wishes, images, or videos..."
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200"
+                rows="5"
+              />
+
+              <div className="mt-4">
+                <input
+                  type="file"
+                  id="feedback-file"
+                  accept="image/*,video/*"
+                  onChange={handleFileChange}
+                  disabled={!!file}
+                  style={{ display: "none" }}
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    document.getElementById("feedback-file").click()
+                  }
+                  disabled={!!file}
+                  className={`px-4 py-2 bg-blue-500 text-white rounded-xl font-medium ${
+                    file ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600"
+                  }`}
+                >
+                  {file ? "File Selected" : "Upload Image/Video"}
+                </button>
+
+                {file && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-sm text-slate-600">
+                      {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleRemoveFile}
+                      className="text-red-500 text-sm hover:text-red-600"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={handleFeedbackSubmit}
+                  disabled={!feedback.trim() || feedbackSubmitted}
+                  className={`px-6 py-2.5 rounded-xl font-medium transition-all duration-200 ${
+                    feedbackSubmitted
+                      ? "bg-green-500 text-white"
+                      : feedback.trim()
+                      ? "bg-blue-500 hover:bg-blue-600 text-white"
+                      : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                  }`}
+                >
+                  {feedbackSubmitted ? "Submitted!" : "Submit Feedback"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </main>
