@@ -8,7 +8,7 @@ import "react-toastify/dist/ReactToastify.css";
 // ✅ Import images
 import bgImage from "../assets/bg-image.jpg";
 import atqorLogo from "../assets/atqorLogo.png";
-// import ceoImage from "../assets/atqorLogo.jpg";
+import ceoImage from "../assets/ceoImage.png";
 
 const Dashboard = () => {
   const { accounts } = useMsal();
@@ -26,14 +26,51 @@ const Dashboard = () => {
   const MAX_VIDEO_SIZE = 20 * 1024 * 1024; // 20MB
 
   const videoLinks = [
-    "https://www.youtube.com/embed/YZZcnFKMSM0",
-    "https://www.youtube.com/embed/tgbNymZ7vqY",
-    "https://www.youtube.com/embed/ysz5S6PUM-U",
-    "https://www.youtube.com/embed/ScMzIvxBSi4",
-    "https://www.youtube.com/embed/aqz-KE-bpKQ",
+    {
+      link: "https://diwali2025storage.blob.core.windows.net/media/7121788-hd_1920_1080_30fps.mp4",
+      name: "Pushkaraj Kale",
+    },
+    {
+      link: "https://diwali2025storage.blob.core.windows.net/media/7685289-hd_1920_1080_30fps.mp4",
+      name: "Kartik Shah",
+    },
+    {
+      link: "https://diwali2025storage.blob.core.windows.net/media/8240564-hd_1920_1080_25fps.mp4",
+      name: "Devi Prasaad Saaho",
+    },
+    {
+      link: "https://diwali2025storage.blob.core.windows.net/media/8811131-hd_1920_1080_25fps.mp4",
+      name: "Amit Gadhvi",
+    },
+    {
+      link: "https://diwali2025storage.blob.core.windows.net/media/8811355-hd_1920_1080_25fps.mp4",
+      name: "C S Lakshmi Narayanan",
+    },
   ];
 
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(3);
+
+  useEffect(() => {
+    const updateVisibleCount = () => {
+      if (window.innerWidth < 640) {
+        setVisibleCount(1); // Mobile (sm)
+        setCurrentIndex(0); // Reset to first video on mobile
+      } else if (window.innerWidth < 1024) {
+        setVisibleCount(2); // Tablet (md)
+        setCurrentIndex(0);
+      } else {
+        setVisibleCount(3); // Desktop (lg+)
+        setCurrentIndex(0);
+      }
+    };
+
+    updateVisibleCount();
+    window.addEventListener("resize", updateVisibleCount);
+    return () => window.removeEventListener("resize", updateVisibleCount);
+  }, []);
+
+  const totalVideos = videoLinks.length;
 
   useEffect(() => {
     if (accounts.length > 0) {
@@ -43,15 +80,16 @@ const Dashboard = () => {
   }, [accounts]);
 
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 3 >= videoLinks.length ? 0 : prev + 3));
+    setCurrentIndex((prev) =>
+      prev >= totalVideos - visibleCount ? 0 : prev + 1
+    );
   };
 
   const handlePrev = () => {
     setCurrentIndex((prev) =>
-      prev === 0 ? Math.max(videoLinks.length - 3, 0) : Math.max(prev - 3, 0)
+      prev <= 0 ? totalVideos - visibleCount : prev - 1
     );
   };
-
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (!selectedFile) return;
@@ -129,13 +167,13 @@ const Dashboard = () => {
   const firstName = userName.split(" ")[0];
 
   return (
-    <div className="min-h-screen relative font-['Poppins']">
+    <div className="min-h-screen relative  font-sans">
       {/* ✅ Background */}
       <div
         className="absolute inset-0 z-0"
         style={{
           backgroundImage: `url(${bgImage})`,
-          backgroundSize: "100% 100%",
+          backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
           backgroundColor: "#f8fafc",
@@ -146,233 +184,244 @@ const Dashboard = () => {
       <ToastContainer />
 
       {/* ✅ Header */}
-      <header className="relative w-full h-[300px] flex flex-col items-center justify-center text-center px-4">
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
-          <img src={atqorLogo} alt="atQor Logo" className="h-10" />
-          <h1 className="text-4xl font-bold text-[#000000]">
-            Wali Diwali <span className="text-[#000000]">@2025</span>
-          </h1>
-        </div>
-        <p className="text-lg text-gray-700">
-          Where tradition meets taste, and gifting gets a glow-up
-        </p>
-      </header>
+      <div>
+        <header className="max-w-[57rem] mx-auto relative w-full h-[300px] flex flex-col items-start justify-center text-center px-4 pt-24">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
+            <img src={atqorLogo} alt="atQor Logo" className="h-12" />
+            <h1 className="text-5xl font-bold text-[#000000]">
+              Wali Diwali <span className="text-[#000000]">@2025</span>
+            </h1>
+          </div>
+          <p className="text-lg text-gray-700">
+            Where tradition meets taste, and gifting gets a glow-up
+          </p>
+        </header>
 
-      <main className="relative pb-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-          {/* ✅ Diwali Message Section */}
-          <div className="bg-[#FBEEDE9E] rounded-3xl shadow-2xl p-8 mb-8 border border-[#B99C66]">
-            <div className="space-y-6">
-              <h2 className="text-3xl font-bold text-gray-800 mb-6">
-                Dear {firstName},
-              </h2>
+        <main className="relative pb-16 pt-24">
+          <div className="max-w-[60rem] mx-auto px-4 sm:px-6  lg:px-8 pb-8">
+            {/* ✅ Diwali Message Section */}
+            <div className="bg-[#FBEEDE]/70 rounded-3xl p-8 mb-4 border-2 border-[#B99C66]">
+              <div className="space-y-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-6">
+                  Dear {firstName},
+                </h2>
 
-              <p className="text-gray-700 leading-relaxed">
-                This Diwali, as we celebrate light, warmth, and new beginnings,
-                we want to recognize the strength, resilience, and unity that
-                you — and your family — bring to atQor.
-              </p>
-
-              <h3 className="text-xl font-semibold italic text-orange-800 mb-3">
-                Crafted with Heart, Rooted in India
-              </h3>
-              <p className="text-gray-700">
-                This Diwali, we go beyond gifting — we create experiences that
-                connect hearts, celebrate traditions, and strengthen
-                relationships.
-              </p>
-
-              <div className="space-y-4 text-gray-700">
-                <p>
-                  Each hamper is a fusion of cultural richness and modern
-                  elegance, thoughtfully curated to reflect the spirit of the
-                  festival.
-                </p>
-                <p>
-                  From brass bell essentials to scented candles and premium dry
-                  fruits, every item tells a story of care, celebration, and
-                  Indian craftsmanship.
-                </p>
-                <p>
-                  Sourced from local artisans, our hampers proudly support the
-                  Make in India initiative, honoring the legacy of handmade
-                  excellence.
-                </p>
-                <p>
-                  With sustainable packaging and reusable elements, we embrace
-                  eco-conscious values while preserving festive charm.
+                <p className="text-gray-700 leading-relaxed">
+                  This Diwali, as we celebrate light, warmth, and new
+                  beginnings, we want to recognize the strength, resilience, and
+                  unity that you — and your family — bring to atQor.
                 </p>
 
-                <p className="font-semibold italic text-orange-800 mb-3">
-                  Let this gift be more than a gesture — let it be a heartfelt
-                  experience that lingers long after the festivities.
+                <h3 className="font-semibold italic text-orange-800 mb-3">
+                  Crafted with Heart, Rooted in India
+                </h3>
+                <p className="text-gray-700">
+                  This Diwali, we go beyond gifting — we create experiences that
+                  connect hearts, celebrate traditions, and strengthen
+                  relationships.
                 </p>
 
-                <p>
-                  Our wellness initiatives this year were just one part of our
-                  dedication to each of you as a valued member of the atQor
-                  family. We know that behind each success is the support and
-                  care of your family, who share in your efforts and
-                  achievements.
-                </p>
+                <div className="space-y-4 text-gray-700">
+                  <p>
+                    Each hamper is a fusion of cultural richness and modern
+                    elegance, thoughtfully curated to reflect the spirit of the
+                    festival.
+                  </p>
+                  <p>
+                    From brass bell essentials to scented candles and premium
+                    dry fruits, every item tells a story of care, celebration,
+                    and Indian craftsmanship.
+                  </p>
+                  <p>
+                    Sourced from local artisans, our hampers proudly support the
+                    Make in India initiative, honoring the legacy of handmade
+                    excellence.
+                  </p>
+                  <p>
+                    With sustainable packaging and reusable elements, we embrace
+                    eco-conscious values while preserving festive charm.
+                  </p>
 
-                <p>
-                  This Diwali, we thank you and your loved ones for being part
-                  of our journey. May the season bring joy and warmth to all.
-                </p>
+                  <p className="font-semibold italic text-orange-800 mb-3">
+                    Let this gift be more than a gesture — let it be a heartfelt
+                    experience that lingers long after the festivities.
+                  </p>
 
-                <p className="font-semibold italic text-orange-800 mb-3">
-                  atQor Wali Diwali, unwrap joy in every jar.
-                </p>
+                  <p>
+                    Our wellness initiatives this year were just one part of our
+                    dedication to each of you as a valued member of the atQor
+                    family. We know that behind each success is the support and
+                    care of your family, who share in your efforts and
+                    achievements.
+                  </p>
 
-                <p className="text-gray-600 italic">
-                  Thank you for being a part of our journey.
-                </p>
-              </div>
+                  <p>
+                    This Diwali, we thank you and your loved ones for being part
+                    of our journey. May the season bring joy and warmth to all.
+                  </p>
 
-              {/* ✅ Signature */}
-              <div className="mt-8 pt-6 border-t border-gray-200">
-                <p className="text-gray-700 mb-4">With gratitude,</p>
-                <div className="flex items-center gap-4">
-                  <img
-                    src="/assets/ceo-image.jpg"
-                    alt="CEO"
-                    className="w-16 h-16 rounded-full border-2 border-orange-200 shadow-lg"
-                  />
-                  <div>
-                    <div className="font-bold text-gray-800 text-lg">
-                      Pushkaraj Kale
+                  <p className="font-semibold italic text-orange-800 mb-3">
+                    atQor Wali Diwali, unwrap joy in every jar.
+                  </p>
+
+                  <p className="text-gray-600 italic">
+                    Thank you for being a part of our journey.
+                  </p>
+                </div>
+
+                {/* ✅ Signature */}
+                <div className="mt-8 pt-6 border-t border-gray-200">
+                  <p className="text-gray-700 mb-4">With gratitude,</p>
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={ceoImage}
+                      alt="CEO"
+                      className="w-16 h-16 rounded-full border-2 border-orange-200 shadow-lg"
+                    />
+                    <div>
+                      <div className="font-bold text-gray-800 text-lg">
+                        Pushkaraj Kale
+                      </div>
+                      <div className="text-gray-600">CEO</div>
                     </div>
-                    <div className="text-gray-600">CEO</div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* ✅ Video Carousel Section */}
-          <div className="bg-[#FBEEDE9E] rounded-3xl shadow-2xl p-8 mb-8 border border-[#B99C66] relative">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
-              Leadership Diwali wishes Video Title
-            </h2>
-
-            {/* Carousel */}
-            <div className="overflow-hidden relative">
-              <div
-                className="flex transition-transform duration-700 ease-in-out"
-                style={{
-                  transform: `translateX(-${
-                    (currentIndex / videoLinks.length) * 100
-                  }%)`,
-                }}
-              >
-                {videoLinks.map((link, index) => (
-                  <div
-                    key={index}
-                    className="flex-shrink-0 w-1/3 px-2"
-                    style={{ minWidth: "33.3333%" }}
-                  >
-                    <div className="rounded-xl overflow-hidden shadow-md">
-                      <iframe
-                        className="w-full h-48"
-                        src={`${link}?rel=0`}
-                        title={`Video ${index + 1}`}
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      ></iframe>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Navigation Arrows */}
-              <button
-                onClick={handlePrev}
-                className="absolute top-1/2 -left-4 transform -translate-y-1/2 bg-[#B99C66] text-white px-3 py-2 rounded-full shadow-md hover:bg-[#a07e3a]"
-              >
-                ❮
-              </button>
-              <button
-                onClick={handleNext}
-                className="absolute top-1/2 -right-4 transform -translate-y-1/2 bg-[#B99C66] text-white px-3 py-2 rounded-full shadow-md hover:bg-[#a07e3a]"
-              >
-                ❯
-              </button>
-            </div>
-          </div>
-
-          {/* ✅ Feedback Section */}
-          <div className="bg-[#FBEEDE9E] rounded-3xl shadow-2xl p-8 mb-8 border border-[#B99C66] relative">
-            <div className="p-8">
-              <h2 className="text-xl font-semibold text-slate-800 mb-4">
-                {userName} Share Your Diwali Wishes
+            {/* ✅ Video Carousel Section */}
+            <div className="bg-[#FBEEDE]/60 rounded-3xl p-8 mb-4 border-2 border-[#B99C66] relative">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-left">
+                Leadership Diwali Wishes
               </h2>
-              <textarea
-                value={feedback}
-                onChange={(e) => setFeedback(e.target.value)}
-                placeholder="Share your wishes, images, or videos..."
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200"
-                rows="5"
-              />
 
-              <div className="mt-4">
-                <input
-                  type="file"
-                  id="feedback-file"
-                  accept="image/*,video/*"
-                  onChange={handleFileChange}
-                  disabled={!!file}
-                  style={{ display: "none" }}
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    document.getElementById("feedback-file").click()
-                  }
-                  disabled={!!file}
-                  className={`px-4 py-2 bg-blue-500 text-white rounded-xl font-medium ${
-                    file ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600"
-                  }`}
-                >
-                  {file ? "File Selected" : "Upload Image/Video"}
-                </button>
-
-                {file && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-sm text-slate-600">
-                      {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleRemoveFile}
-                      className="text-red-500 text-sm hover:text-red-600"
-                    >
-                      Remove
-                    </button>
+              {/* Carousel */}
+              <div className="relative">
+                <div className="overflow-hidden">
+                  <div
+                    className="flex transition-transform duration-700 ease-in-out"
+                    style={{
+                      transform: `translateX(-${
+                        currentIndex * (100 / visibleCount)
+                      }%)`,
+                    }}
+                  >
+                    {videoLinks.map((video, index) => (
+                      <div
+                        key={index}
+                        className="flex-shrink-0 w-1/3 px-2 py-2"
+                        style={{
+                          minWidth: `${100 / visibleCount}%`,
+                        }}
+                      >
+                        <div className="rounded-xl overflow-hidden ">
+                          <video
+                            className="w-full h-48"
+                            src={video.link}
+                            title={`Video ${index + 1}`}
+                            autoPlay
+                            muted
+                            loop
+                            style={{ pointerEvents: "none" }}
+                          />
+                          <p className="text-center font-semibold">
+                            {video.name}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
+                </div>
 
-              <div className="mt-4 flex justify-end">
+                {/* Navigation Arrows */}
                 <button
-                  onClick={handleFeedbackSubmit}
-                  disabled={!feedback.trim() || feedbackSubmitted}
-                  className={`px-6 py-2.5 rounded-xl font-medium transition-all duration-200 ${
-                    feedbackSubmitted
-                      ? "bg-green-500 text-white"
-                      : feedback.trim()
-                      ? "bg-blue-500 hover:bg-blue-600 text-white"
-                      : "bg-slate-200 text-slate-400 cursor-not-allowed"
-                  }`}
+                  onClick={handlePrev}
+                  className="absolute cursor-pointer top-1/2 -left-3 transform -translate-y-1/2 bg-[#B99C66] text-white px-4 py-2 rounded-full opacity-40 hover:opacity-90 shadow-md hover:bg-[#a07e3a]"
                 >
-                  {feedbackSubmitted ? "Submitted!" : "Submit Feedback"}
+                  ❮
+                </button>
+                <button
+                  onClick={handleNext}
+                  className="absolute cursor-pointer top-1/2 -right-3 transform -translate-y-1/2 bg-[#B99C66] text-white px-4 py-2 rounded-full opacity-40 hover:opacity-90 shadow-md hover:bg-[#a07e3a]"
+                >
+                  ❯
                 </button>
               </div>
             </div>
+
+            {/* ✅ Feedback Section */}
+            <div className="bg-[#FBEEDE]/50 rounded-3xl  p-2 sm:p-4 mb-8 border-2 border-[#B99C66] relative">
+              <div className="p-8">
+                <h2 className="text-xl font-semibold text-slate-800 mb-4">
+                  {firstName} Share Your Diwali Wishes
+                </h2>
+                <textarea
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  placeholder="Share your wishes, images, or videos..."
+                  className="w-full px-4 py-3 border border-[#B99C66]-200 rounded-xl focus:border-transparent resize-none transition-all duration-200"
+                  rows="5"
+                />
+
+                <div className="mt-4">
+                  {file && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-sm text-slate-600">
+                        {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleRemoveFile}
+                        className="text-red-500 cursor-pointer text-sm hover:text-red-600"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 block sm:flex justify-end">
+                  <input
+                    type="file"
+                    id="feedback-file"
+                    accept="image/*,video/*"
+                    onChange={handleFileChange}
+                    disabled={!!file}
+                    style={{ display: "none" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      document.getElementById("feedback-file").click()
+                    }
+                    disabled={!!file}
+                    className={`px-4 py-2 bg-[#B99C66] text-white mx-0 mb-2 sm:mb-0 sm:mx-4 cursor-pointer rounded-xl font-medium ${
+                      file
+                        ? "opacity-60 cursor-not-allowed"
+                        : "hover:bg-[#B99C66] hover:opacity-100"
+                    }`}
+                  >
+                    {file ? "File Selected" : "Upload Image/Video"}
+                  </button>
+                  <button
+                    onClick={handleFeedbackSubmit}
+                    disabled={!feedback.trim() || feedbackSubmitted}
+                    className={`px-6 py-2.5 rounded-xl font-medium transition-all duration-200 ${
+                      feedbackSubmitted
+                        ? "bg-[#B99C66] text-white"
+                        : feedback.trim()
+                        ? "bg-[#B99C66] hover:bg-[#B99C66] opacity-80 hover:opacity-100 hover:cursor-pointer text-white"
+                        : "bg-[#B99C66] text-white opacity-50 cursor-not-allowed"
+                    }`}
+                  >
+                    {feedbackSubmitted ? "Submitted!" : "Submit Feedback"}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 };
